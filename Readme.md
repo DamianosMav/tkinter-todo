@@ -37,15 +37,15 @@ _No external packages required._
    git clone https://github.com/DamianosMav/tkinter-todo.git
    cd tkinter-todo
    ```
-##
-Run the app
+
+## Run the app
     python todo.py
 
 
-⚙️Configuration
+## ⚙️Configuration
     The app uses a constant save path at the top of todo.py
 
-📄License
+## 📄License
     This project is licensed under the MIT License. See LICENSE for details.
 
 
