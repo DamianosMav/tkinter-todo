@@ -46,7 +46,7 @@ _No external packages required._
     The app uses a constant save path at the top of todo.py
 
 ## 📄License
-    This project is licensed under the MIT License. See LICENSE for details.
+    This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
 
 Built by Damianos Mav
