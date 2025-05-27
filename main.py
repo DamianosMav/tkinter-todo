@@ -1,100 +1,99 @@
+import json
 import tkinter as tk
 from tkinter import font
-
 from pathlib import Path
-import json
 
-#Setting the path to the documents folder and toso.jsoin file
-SAVE_PATH = Path.home() / "Documents" / "Todo.json"
+class ToDo:
+    def __init__(self, root):
+        # Set up root window
+        self.root = root
+        self.root.title("To-Do List")
+        self.root.geometry("300x400")
+        self.root.resizable(False, False)
 
-# Fonts
-font_normal = font.Font(family="Helvetica", size=8)
-font_strike = font.Font(family="Helvetica", size=8, overstrike=1)
+        # Define save path for storing tasks
+        self.path = Path.home() / "Documents" / "Todo.json"
 
-# Toggles strike-through
-def toggle_font(entry, var):
-    entry.config(font=font_strike if var.get() else font_normal)
+        # Define fonts (normal and strike-through for completed tasks)
+        self.font_normal = font.Font(family="Helvetica", size=8)
+        self.font_strike = font.Font(family="Helvetica", size=8, overstrike=1)
 
-# Clears all the entries the user saved
-def clear_entries(stringvars):
-    for entry, _ in stringvars:
-        entry.set("") # Clears it from the UI
+        # Initialize lists to store task entry data and checkbox states
+        self.entries = []  # List of (StringVar, Entry)
+        self.checks = []   # List of IntVar (checkbox states)
 
-    SAVE_PATH.write_text("") # Clears it from the json file
+        num_of_entries = 14  # Maximum number of task rows
 
-# Saves the entries
-def save_entries(entries = []):
-    entriesDictionary = {i: entry.get() for i, (entry, _) in enumerate(entries)}
+        # Create Entry and Checkbutton widgets for each task
+        for i in range(num_of_entries):
+            entry_var = tk.StringVar()    # StringVar to hold entry text
+            check_var = tk.IntVar()       # IntVar to hold checkbox state (0 or 1)
 
-    SAVE_PATH.write_text(json.dumps(entriesDictionary))
+            # Create entry field for the task
+            entry = tk.Entry(self.root, width=40, textvariable=entry_var, font=self.font_normal)
+            # Create checkbox to toggle strike-through effect
+            check_button = tk.Checkbutton(
+                self.root,
+                variable=check_var,
+                command=lambda e=entry, v=check_var: self.toggle_font(e, v)
+            )
 
-# Loads all the entries
-def load_entries(file_path):
-    file_path = Path(file_path)
-    
-    if not file_path.exists():
-        return []
-    
-    text = file_path.read_text().strip()
+            # Place the widgets in the grid
+            entry.grid(row=i, column=0, padx=5, columnspan=2)
+            check_button.grid(row=i, column=2)
 
-    if not text:
-        return []
-    
-    return list(json.loads(text).values())
-        
-def run_app():
-    #Setting up the app, screen size and font
-    app = tk.Tk(screenName=None, baseName=None, useTk=1)
-    app.title("To-Do List")
-    app.geometry("300x400")
-    app.resizable(False, False)
+            # Save references for later use
+            self.entries.append((entry_var, entry))
+            self.checks.append(check_var)
 
-    
+        # Load any previously saved entries from file
+        saved = self.load_entries(self.path)
+        for (stringvar, _), text in zip(self.entries, saved):
+            stringvar.set(text)
 
-    entries = [] # will hold (StringVar, Entry)
-    checks  = [] # will hold IntVar for each checkbox
+        # Create and place Save and Clear buttons
+        save_button = tk.Button(self.root, text="SAVE", background="green", command=self.save_entries)
+        clear_button = tk.Button(self.root, text="CLEAR", background="red", command=self.clear_entries)
 
-    num_of_enties = 14
+        # Place buttons below the entries
+        save_button.grid(row=num_of_entries + 1, column=1, columnspan=2, sticky="se", padx=35, pady=5)
+        clear_button.grid(row=num_of_entries + 1, column=0, columnspan=2, sticky="sw", padx=15, pady=5)
 
-    # Create's entries and checkboxes from the provided variable 
-    for i in range(num_of_enties):
-        entry_string_var = tk.StringVar()
-        entryCheckVar = tk.IntVar()
+    def toggle_font(self, entry, var):
+        """Toggle font style between normal and strike-through based on checkbox state."""
+        entry.config(font=self.font_strike if var.get() else self.font_normal)
 
-        entry = tk.Entry(app, width=40, textvariable=entry_string_var, font=font_normal)
-        check_button  = tk.Checkbutton(app, variable=entryCheckVar, command=lambda e=entry, v=entryCheckVar: toggle_font(e, v))
+    def clear_entries(self):
+        """Clear all entry fields and delete saved JSON file content."""
+        for stringvar, _ in self.entries:
+            stringvar.set("")  # Clear entry from UI
 
-        entry.grid(row=i, column=0, padx=5, columnspan=2)
-        check_button .grid(row=i, column=2)
+        self.path.write_text("")  # Clear saved file
 
-        entries.append((entry_string_var, entry))
-        checks.append(entryCheckVar)
+    def save_entries(self):
+        """Save all current task text values into a JSON file."""
+        # Create a dictionary: {index: task_text}
+        entries_dict = {i: var.get() for i, (var, _) in enumerate(self.entries)}
+        # Save as JSON to file
+        self.path.write_text(json.dumps(entries_dict))
 
-    # Load any saved tasks
-    saved = load_entries(SAVE_PATH)
-    for (stringvar, _), text in zip(entries, saved):
-        stringvar.set(text)
+    def load_entries(self, file_path):
+        """Load previously saved entries from JSON file."""
+        file_path = Path(file_path)
 
-    # UI Buttons for saving and clearing
-    save_button = tk.Button(app, text="SAVE", background="green")
-    clear_button = tk.Button(app, text="CLEAR", background="red")
+        # If file doesn't exist or is empty, return empty list
+        if not file_path.exists():
+            return []
 
-    rows = num_of_enties + 1
-    clear_button.grid(row= rows, column=0 , columnspan= 2, sticky="sw", padx= 15, pady= 5)
-    save_button.grid(row= rows, column= 1, columnspan= 2, sticky="se", padx= 35, pady= 5)
+        content = file_path.read_text().strip()
+        if not content:
+            return []
 
-    # Button logic
-    clear_button.config(command=lambda: clear_entries(entries))
-    save_button.config(command=lambda: save_entries(entries))
+        # Return list of task strings
+        return list(json.loads(content).values())
 
-
-
-
-    app.mainloop()
-
+# Run the application
 if __name__ == "__main__":
-    run_app()
-
-
-
-
+    root = tk.Tk()
+    app = ToDo(root)
+    root.mainloop()
